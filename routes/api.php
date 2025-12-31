@@ -24,6 +24,9 @@ use App\Http\Controllers\Api\HotelbedsController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\TailoredHotelController;
 
+use App\Http\Controllers\Api\Admin\PromoEngineController;
+use App\Http\Controllers\Api\Public\PromoController;
+
 use App\Http\Controllers\Api\HotelbedsDebugController;
 
 
@@ -86,6 +89,13 @@ Route::post('reservations/checkrate', [ReservationController::class, 'hotelbedsC
 // Voucher endpoint (protected)
 Route::get('reservations/{reservation}/voucher', [ReservationController::class, 'voucher']);
 Route::get('favorites', [FavoriteController::class, 'index']);
+
+// ------- PROMO ENGINE (PUBLIC) -------
+Route::prefix('v1/promos')->group(function (): void {
+    Route::get('offer', [PromoController::class, 'offerForHotel']); // ?hotel_id=123
+    Route::post('offers/{offer}/track', [PromoController::class, 'track'])->middleware('throttle:60,1');
+});
+
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('auth/me', [AuthController::class, 'me']);
@@ -140,6 +150,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('travel-destinations', [TravelDestinationController::class, 'index']);
     Route::get('accommodations', [AccommodationController::class, 'index']);
     Route::get('reservations',[ReservationController::class, 'index']);
+});
+
+// ------- PROMO ENGINE (ADMIN) -------
+Route::middleware(['auth:sanctum'])->prefix('v1/admin/promo-engine')->group(function (): void {
+    Route::get('overview', [PromoEngineController::class, 'overview']); // ?period=today|week|month
+    Route::get('settings', [PromoEngineController::class, 'settings']);
+    Route::put('settings', [PromoEngineController::class, 'updateSettings']);
+    Route::put('modes/{mode}', [PromoEngineController::class, 'updateMode']);
 });
 
 
