@@ -386,13 +386,36 @@ class InventoryController extends Controller
 
         $path = $file->store("hotels/{$hotel->id}/{$collection}", 'public');
 
-        $media = $hotel->media()->create([
-            'collection' => $collection,
+        $isSpatieMedia = \Illuminate\Support\Facades\Schema::hasColumn('media', 'collection_name');
+
+        $payload = [
             'file_name'  => $file->getClientOriginalName(),
-            'path'       => $path,
             'mime_type'  => $file->getClientMimeType(),
             'size'       => $file->getSize(),
-        ]);
+        ];
+
+        if ($isSpatieMedia) {
+            $payload += [
+                'collection_name' => $collection,
+                'name'            => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                'disk'            => 'public',
+                'custom_properties' => ['path' => $path],
+            ];
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('media', 'order_column')) {
+                $max = (int) $hotel->media()
+                    ->where('collection_name', $collection)
+                    ->max('order_column');
+                $payload['order_column'] = $max ? ($max + 1) : 1;
+            }
+        } else {
+            $payload += [
+                'collection' => $collection,
+                'path'       => $path,
+            ];
+        }
+
+        $media = $hotel->media()->create($payload);
 
         return redirect()->back();
         // return response()->json(['success' => true, 'media' => $media]);

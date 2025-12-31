@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Hotel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class InventoryHotelsController extends Controller
@@ -52,13 +53,36 @@ public function uploadMedia(Request $request, Hotel $hotel)
 
     $path = $file->store("hotels/{$hotel->id}/{$collection}", 'public');
 
-    $media = $hotel->media()->create([
-        'collection' => $collection,
+    $isSpatieMedia = Schema::hasColumn('media', 'collection_name');
+
+    $payload = [
         'file_name'  => $file->getClientOriginalName(),
-        'path'       => $path,
         'mime_type'  => $file->getClientMimeType(),
         'size'       => $file->getSize(),
-    ]);
+    ];
+
+    if ($isSpatieMedia) {
+        $payload += [
+            'collection_name' => $collection,
+            'name'            => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+            'disk'            => 'public',
+            'custom_properties' => ['path' => $path],
+        ];
+
+        if (Schema::hasColumn('media', 'order_column')) {
+            $max = (int) $hotel->media()
+                ->where('collection_name', $collection)
+                ->max('order_column');
+            $payload['order_column'] = $max ? ($max + 1) : 1;
+        }
+    } else {
+        $payload += [
+            'collection' => $collection,
+            'path'       => $path,
+        ];
+    }
+
+    $media = $hotel->media()->create($payload);
 
     return response()->json([
         'success' => true,

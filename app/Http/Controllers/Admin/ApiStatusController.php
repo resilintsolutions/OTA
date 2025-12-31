@@ -74,12 +74,28 @@ class ApiStatusController extends Controller
             }
 
             // Most booked FROM: guest country from JSON (guest_info.country)
+            $driver = DB::connection()->getDriverName();
+
+            $guestCountrySelect = match ($driver) {
+                // SQLite: json_extract returns scalar; string values come back unquoted.
+                'sqlite' => "json_extract(guest_info, '$.country') as country",
+                // Postgres json->> returns text
+                'pgsql' => "guest_info->>'country' as country",
+                // MySQL/MariaDB
+                default => "JSON_UNQUOTE(JSON_EXTRACT(guest_info, '$.country')) as country",
+            };
+
+            $guestCountryWhereNotNull = match ($driver) {
+                'pgsql' => "guest_info->>'country'",
+                default => "JSON_EXTRACT(guest_info, '$.country')",
+            };
+
             $mostBookedFrom = Reservation::whereIn('hotel_id', $hotelIds)
                 ->select(
-                    DB::raw("JSON_UNQUOTE(JSON_EXTRACT(guest_info, '$.country')) as country"),
+                    DB::raw($guestCountrySelect),
                     DB::raw('COUNT(*) as total')
                 )
-                ->whereNotNull(DB::raw("JSON_EXTRACT(guest_info, '$.country')"))
+                ->whereNotNull(DB::raw($guestCountryWhereNotNull))
                 ->groupBy('country')
                 ->orderByDesc('total')
                 ->value('country');

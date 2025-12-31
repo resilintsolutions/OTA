@@ -117,15 +117,22 @@ public function index(Request $req)
      */
     public function show(Hotel $hotel, Request $request)
     {
+        $isSpatieMedia = \Illuminate\Support\Facades\Schema::hasColumn('media', 'collection_name');
+
         // eager load media (images collection ordered by position)
-        $hotel->load(['media' => function($q) {
+        $hotel->load(['media' => function($q) use ($isSpatieMedia) {
+            if ($isSpatieMedia) {
+                $q->orderBy('collection_name')->orderBy('order_column');
+                return;
+            }
+
             $q->orderBy('collection')->orderBy('position');
         }]);
 
         // map media with public url (so blade can use ->url)
+        // best-effort public URL, depending on underlying schema
         $media = $hotel->media->map(function($m) {
-            // use Storage::disk('public')->url($m->path)
-            $m->public_url = Storage::disk('public')->url($m->path);
+            $m->public_url = $m->url;
             return $m;
         });
 
@@ -138,11 +145,17 @@ public function index(Request $req)
     public function deleteMedia(Hotel $hotel, \App\Models\Media $media)
     {
         // ensure media belongs to hotel
-        if ($media->mediable_type !== Hotel::class || $media->mediable_id != $hotel->id) {
+        $ownerType = $media->model_type ?? $media->mediable_type ?? null;
+        $ownerId   = $media->model_id ?? $media->mediable_id ?? null;
+
+        if ($ownerType !== Hotel::class || (string) $ownerId !== (string) $hotel->id) {
             return response()->json(['message' => 'Not found'], 404);
         }
 
-        Storage::disk('public')->delete($media->path);
+        // delete underlying file best-effort
+        if (!empty($media->path)) {
+            Storage::disk('public')->delete($media->path);
+        }
         $media->delete();
 
         return response()->json(['success' => true]);

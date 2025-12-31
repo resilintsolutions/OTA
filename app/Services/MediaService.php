@@ -30,18 +30,54 @@ class MediaService
             $path = "$folder/$filename";
 
             Storage::disk('public')->put($path, $content);
-            
-            $media = Media::create([
-                'mediable_type' => Hotel::class,
-                'mediable_id'   => $hotelId,
-                'collection'    => $collection,
-                'file_name'     => $filename,
-                'path'          => $path,
-                'mime_type'     => $mime,
-                'size'          => strlen($content),
-                'external_url'  => $externalUrl,
-                'meta'          => $meta,
-            ]);
+
+            $isSpatie = \Illuminate\Support\Facades\Schema::hasColumn('media', 'collection_name');
+
+            // Next order within this collection for this hotel.
+            $order = null;
+            if ($isSpatie && \Illuminate\Support\Facades\Schema::hasColumn('media', 'order_column')) {
+                $order = (int) Media::query()
+                    ->where('model_type', Hotel::class)
+                    ->where('model_id', $hotelId)
+                    ->where('collection_name', $collection)
+                    ->max('order_column');
+                $order = $order ? ($order + 1) : 1;
+            }
+
+            $payload = [
+                // Shared-ish
+                'file_name'    => $filename,
+                'mime_type'    => $mime,
+                'size'         => strlen($content),
+                'external_url' => $externalUrl,
+                'meta'         => $meta,
+            ];
+
+            if ($isSpatie) {
+                // Spatie schema present in DB.
+                $payload += [
+                    'model_type'       => Hotel::class,
+                    'model_id'         => $hotelId,
+                    'collection_name'  => $collection,
+                    'name'             => pathinfo($filename, PATHINFO_FILENAME),
+                    'disk'             => 'public',
+                    'custom_properties'=> ['path' => $path] + ($meta ?? []),
+                ];
+
+                if ($order !== null) {
+                    $payload['order_column'] = $order;
+                }
+            } else {
+                // Legacy custom schema.
+                $payload += [
+                    'mediable_type' => Hotel::class,
+                    'mediable_id'   => $hotelId,
+                    'collection'    => $collection,
+                    'path'          => $path,
+                ];
+            }
+
+            $media = Media::create($payload);
             return $media;
         } catch (\Exception $e) {
             logger()->warning('Media import failed: ' . $e->getMessage(), ['url' => $externalUrl]);

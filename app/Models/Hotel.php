@@ -53,26 +53,41 @@ class Hotel extends Model
 
     public function media()
     {
-        return $this->morphMany(\App\Models\Media::class, 'mediable');
+    // Compat: this project currently has the Spatie-style media schema
+    // (model_type/model_id/collection_name) and uses our own Media model.
+    // So we morph on `model` (not `mediable`).
+    return $this->morphMany(\App\Models\Media::class, 'model');
     }
 
     public function images()
     {
-        return $this->media()->where('collection', 'images')->orderBy('position');
+        // Spatie schema uses `collection_name`; our custom schema uses `collection`.
+        // Prefer `collection_name` if present.
+        $relation = $this->media();
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('media', 'collection_name')) {
+            return $relation->where('collection_name', 'images')->orderBy('order_column');
+        }
+
+        return $relation->where('collection', 'images')->orderBy('position');
     }
 
     public function getFeaturedImageAttribute()
     {
+        $isSpatie = \Illuminate\Support\Facades\Schema::hasColumn('media', 'collection_name');
+        $collectionCol = $isSpatie ? 'collection_name' : 'collection';
+        $posCol = $isSpatie ? 'order_column' : 'position';
+
         $media = $this->media
-            ->where('collection', 'images')
-            ->sortBy('position')
+            ->where($collectionCol, 'images')
+            ->sortBy($posCol)
             ->firstWhere('is_featured', true);
 
         // fallback: first image
         if (!$media) {
             $media = $this->media
-                ->where('collection', 'images')
-                ->sortBy('position')
+                ->where($collectionCol, 'images')
+                ->sortBy($posCol)
                 ->first();
         }
 
@@ -81,15 +96,26 @@ class Hotel extends Model
         }
 
         // Prefer external URL, else local
-        return $media->external_url ?? asset('storage/'.$media->path);
+        // Prefer external URL, else local
+        if (!empty($media->external_url)) {
+            return $media->external_url;
+        }
+
+        // Spatie schema stores file name under `file_name` and expects a conversions system;
+        // our custom Media model exposes `url` for a best-effort public URL.
+        return $media->url;
     }
 
     public function getImagesAttribute()
     {
+        $isSpatie = \Illuminate\Support\Facades\Schema::hasColumn('media', 'collection_name');
+        $collectionCol = $isSpatie ? 'collection_name' : 'collection';
+        $posCol = $isSpatie ? 'order_column' : 'position';
+
         return $this->media
-            ->where('collection', 'images')
-            ->sortBy('position')
-            ->map(fn ($m) => $m->url) // <— NOW RETURNS external_url OR storage URL
+            ->where($collectionCol, 'images')
+            ->sortBy($posCol)
+            ->map(fn ($m) => $m->url)
             ->values()
             ->all();
     }
