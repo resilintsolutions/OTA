@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Reservation;
 use App\Models\SearchLog;
+use App\Models\PromoEngineSetting;
+use App\Models\PromoEvent;
+use App\Models\PromoOffer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -191,6 +194,26 @@ class KpiController extends Controller
             ->limit(5)
             ->get();
 
+        // ---------- PROMO ENGINE (dashboard panel) ----------
+        $promoSettings = PromoEngineSetting::singleton();
+
+        $promoActiveOffers = PromoOffer::query()->where('is_active', true)->count();
+        $promoOffersTotal = PromoOffer::query()->count();
+
+        $promoImpressions = PromoEvent::query()
+            ->where('event_type', 'impression')
+            ->whereBetween('created_at', [$from, $to])
+            ->count();
+
+        $promoClicks = PromoEvent::query()
+            ->where('event_type', 'click')
+            ->whereBetween('created_at', [$from, $to])
+            ->count();
+
+        $promoCtr = $promoImpressions > 0
+            ? round(($promoClicks / $promoImpressions) * 100, 2)
+            : 0.0;
+
         return view('admin.dashboard.kpis', [
             'period'             => $period,
             'from'               => $from,
@@ -210,6 +233,13 @@ class KpiController extends Controller
             'bookingSuccessRate' => $bookingSuccessRate,
             'cancellationRate'   => $cancellationRate,
             'topDestinations'    => $topDestinations,
+
+            'promoSettings'       => $promoSettings,
+            'promoActiveOffers'   => $promoActiveOffers,
+            'promoOffersTotal'    => $promoOffersTotal,
+            'promoImpressions'    => $promoImpressions,
+            'promoClicks'         => $promoClicks,
+            'promoCtr'            => $promoCtr,
         ]);
     }
 }

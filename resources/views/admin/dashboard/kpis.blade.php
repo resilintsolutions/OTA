@@ -209,6 +209,65 @@
                 </table>
             </div>
         </div>
+
+        {{-- Promo Engine panel --}}
+        <div class="kpi-card mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <div class="kpi-title mb-1">Promo Engine</div>
+                    <div class="kpi-sub">Overview and quick actions (no admin API token needed).</div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-sm btn-outline-primary" href="{{ route('admin.promo.index') }}">Open Promo</a>
+                </div>
+            </div>
+
+            @if (session('success'))
+                <div class="alert alert-success py-2">{{ session('success') }}</div>
+            @endif
+            @if (session('error'))
+                <div class="alert alert-danger py-2">{{ session('error') }}</div>
+            @endif
+
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="kpi-title">Enabled</div>
+                    <div class="kpi-value">{{ $promoSettings->is_enabled ? 'Yes' : 'No' }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-title">Active Offers</div>
+                    <div class="kpi-value">{{ number_format($promoActiveOffers) }}</div>
+                    <div class="kpi-sub">Total offers: {{ number_format($promoOffersTotal) }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-title">Impressions</div>
+                    <div class="kpi-value">{{ number_format($promoImpressions) }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="kpi-title">Clicks / CTR</div>
+                    <div class="kpi-value">{{ number_format($promoClicks) }} / {{ $promoCtr }}%</div>
+                </div>
+            </div>
+
+            <hr />
+
+            <form method="post" action="{{ route('admin.promo-engine.recompute') }}" class="row g-2 align-items-end">
+                @csrf
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">Hotel ID</label>
+                    <input name="hotel_id" type="number" min="1" class="form-control form-control-sm" placeholder="e.g. 1" required>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" value="1" id="forceRecompute" name="force">
+                        <label class="form-check-label" for="forceRecompute">Force recompute (deactivate current active offer)</label>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-sm btn-primary" type="submit">Recompute Offer</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>    
 </x-app-layout>

@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\AdminReservationController;
 use App\Http\Controllers\Admin\HotelExclusionController;
 use App\Http\Controllers\Admin\SystemHealthController;
 use App\Http\Controllers\Admin\PromoDashboardController;
+use App\Http\Controllers\Admin\PromoEngineWebController;
 
 Route::get('/', function () {
     // return view('welcome');
@@ -175,6 +176,9 @@ Route::middleware(['auth', 'role:admin,web'])->prefix('admin')->name('admin.')->
         Route::get('/', [PromoDashboardController::class, 'index'])->name('index');
         Route::get('/offers/{offer}', [PromoDashboardController::class, 'show'])->name('offers.show');
     });
+
+    // Promo Engine actions (web dashboard)
+    Route::post('promo-engine/recompute', [PromoEngineWebController::class, 'recompute'])->name('promo-engine.recompute');
 });
 
 Route::get('test-media', function (\App\Services\MediaService $ms) {
