@@ -102,8 +102,10 @@ final class PromoEngineService
         $rangeMin = ($marginBeforePercent * $mode->min_percent_of_margin) / 100.0;
         $rangeMax = ($marginBeforePercent * $mode->max_percent_of_margin) / 100.0;
 
-        $hardFloor = max($settings->min_profit_after_promo_percent, $settings->safety_buffer_percent);
-        $maxSafeDiscount = max(0.0, $marginBeforePercent - $hardFloor);
+    // Hard floor: final margin can never drop below this value.
+    // Safety buffer is treated as an *ideal* target (soft), not a hard rejection.
+    $hardFloor = $settings->min_profit_after_promo_percent;
+    $maxSafeDiscount = max(0.0, $marginBeforePercent - $hardFloor);
 
         $candidateMax = min($rangeMax, $maxSafeDiscount);
 
@@ -116,9 +118,6 @@ final class PromoEngineService
         $marginAfter = $marginBeforePercent - $discount;
 
         if ($marginAfter < $settings->min_profit_after_promo_percent) {
-            return null;
-        }
-        if ($marginAfter < $settings->safety_buffer_percent) {
             return null;
         }
 

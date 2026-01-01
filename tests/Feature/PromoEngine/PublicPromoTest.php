@@ -53,3 +53,20 @@ it('returns null for missing hotel_id', function (): void {
     $res = $this->getJson('/api/v1/promos/offer');
     $res->assertStatus(422);
 });
+
+it('can fetch an active offer by id', function (): void {
+    $hotelId = DB::table('hotels')->insertGetId([
+        'name' => 'Test Hotel 2',
+        'slug' => 'test-hotel-2',
+        'base_margin_percent' => 10.00,
+    ]);
+
+    $res = $this->getJson("/api/v1/promos/offer?hotel_id={$hotelId}");
+    $res->assertOk();
+
+    $offerId = (int) $res->json('data.id');
+
+    $this->getJson("/api/v1/promos/offers/{$offerId}")
+        ->assertOk()
+        ->assertJsonPath('data.id', $offerId);
+});

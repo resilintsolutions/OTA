@@ -31,6 +31,18 @@ final class PromoController extends Controller
         return response()->json(['data' => new PromoOfferResource($offer)]);
     }
 
+    public function show(Request $request, PromoOffer $offer): JsonResponse
+    {
+        // Only expose active, time-valid offers to the public.
+        $now = now();
+
+        if (! $offer->is_active || ($offer->starts_at !== null && $offer->starts_at->gt($now)) || ($offer->ends_at !== null && $offer->ends_at->lt($now))) {
+            return response()->json(['data' => null], 404);
+        }
+
+        return response()->json(['data' => new PromoOfferResource($offer)]);
+    }
+
     public function track(TrackPromoEventRequest $request, PromoOffer $offer): JsonResponse
     {
         $data = $request->validated();

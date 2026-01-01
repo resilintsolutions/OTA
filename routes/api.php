@@ -93,6 +93,7 @@ Route::get('favorites', [FavoriteController::class, 'index']);
 // ------- PROMO ENGINE (PUBLIC) -------
 Route::prefix('v1/promos')->group(function (): void {
     Route::get('offer', [PromoController::class, 'offerForHotel']); // ?hotel_id=123
+    Route::get('offers/{offer}', [PromoController::class, 'show'])->whereNumber('offer');
     Route::post('offers/{offer}/track', [PromoController::class, 'track'])->middleware('throttle:60,1');
 });
 
@@ -158,6 +159,18 @@ Route::middleware(['auth:sanctum'])->prefix('v1/admin/promo-engine')->group(func
     Route::get('settings', [PromoEngineController::class, 'settings']);
     Route::put('settings', [PromoEngineController::class, 'updateSettings']);
     Route::put('modes/{mode}', [PromoEngineController::class, 'updateMode']);
+
+    // Modes management
+    Route::post('modes', [PromoEngineController::class, 'storeMode']);
+    Route::delete('modes/{mode}', [PromoEngineController::class, 'destroyMode']);
+
+    // Offers management
+    Route::get('offers', [PromoEngineController::class, 'offers']);
+    Route::post('offers/recompute', [PromoEngineController::class, 'recomputeOffer']);
+    Route::post('offers/{offer}/deactivate', [PromoEngineController::class, 'deactivateOffer']);
+
+    // Events read
+    Route::get('events', [PromoEngineController::class, 'events']);
 });
 
 

@@ -15,7 +15,7 @@ beforeEach(function (): void {
     PromoEngineSetting::singleton()->update([
         'is_enabled' => true,
         'min_margin_required_percent' => 6.00,
-        'safety_buffer_percent' => 2.00,
+    'safety_buffer_percent' => 2.00,
         'min_profit_after_promo_percent' => 4.00,
         'auto_downgrade_enabled' => true,
         'discount_selection_strategy' => 'max',
@@ -76,6 +76,30 @@ it('blocks hotels below min margin required (6%)', function (): void {
 
 it('auto-downgrades when aggressive would break min profit after promo', function (): void {
     // Margin 12%: aggressive safe max discount is 8.0 (hardFloor 4%) => leaves 4.0 and remains aggressive.
+    $hotelId = DB::table('hotels')->insertGetId([
+        'name' => 'Test Hotel',
+        'slug' => 'test-hotel',
+        'base_margin_percent' => 12.00,
+    ]);
+
+    $engine = app(PromoEngineService::class);
+    $offer = $engine->getOrCreateActiveOfferForHotel($hotelId);
+
+    expect($offer)->not->toBeNull();
+    expect($offer->mode_code)->toBe('aggressive');
+    expect($offer->discount_percent)->toBe(8.00);
+    expect($offer->margin_after_percent)->toBe(4.00);
+});
+
+it('treats safety buffer as soft (does not block offers above hard floor)', function (): void {
+    // Make safety buffer higher than the hard floor to prove it isn't treated as a hard minimum.
+    PromoEngineSetting::singleton()->update([
+        'safety_buffer_percent' => 6.00,
+        'min_profit_after_promo_percent' => 4.00,
+    ]);
+
+    // Margin 12%: aggressive can safely discount to the hard floor (4%) => discount 8.0.
+    // Even though safety buffer is 6%, it should not block the offer.
     $hotelId = DB::table('hotels')->insertGetId([
         'name' => 'Test Hotel',
         'slug' => 'test-hotel',
