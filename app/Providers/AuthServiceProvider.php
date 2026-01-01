@@ -23,7 +23,9 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         Gate::before(function ($user, $ability) {
-            return $user->hasRole('admin') ? true : null;
+            // Web dashboard routes are session-authenticated, so keep this check
+            // guard-explicit to avoid false negatives.
+            return $user->hasRole('admin', 'web') ? true : null;
         });
     }
 }

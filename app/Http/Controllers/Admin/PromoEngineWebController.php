@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\PromoEngineSetting;
 use App\Services\PromoEngine\PromoEngineService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,8 +13,6 @@ final class PromoEngineWebController extends Controller
 {
     public function recompute(Request $request, PromoEngineService $engine): RedirectResponse
     {
-        $this->authorize('update', PromoEngineSetting::class);
-
         $hotelId = (int) $request->input('hotel_id', 0);
         if ($hotelId <= 0) {
             return back()->with('error', 'hotel_id is required.');
