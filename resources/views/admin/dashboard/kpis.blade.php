@@ -251,11 +251,34 @@
 
             <hr />
 
-            <form method="post" action="{{ route('admin.promo-engine.recompute') }}" class="row g-2 align-items-end">
+            <form method="post" action="{{ route('admin.promo-engine.recompute') }}" class="row g-2 align-items-end" id="promoRecomputeForm">
                 @csrf
                 <div class="col-md-4">
-                    <label class="form-label small text-muted">Hotel ID</label>
-                    <input name="hotel_id" type="number" min="1" class="form-control form-control-sm" placeholder="e.g. 1" required>
+                    <label class="form-label small text-muted">Hotel</label>
+
+                    {{-- Visible searchable input --}}
+                    <input
+                        id="promoHotelSearch"
+                        type="text"
+                        class="form-control form-control-sm"
+                        list="promoHotelsList"
+                        placeholder="Search hotel by name (or pick from list)"
+                        autocomplete="off"
+                        required
+                    >
+
+                    {{-- Actual submitted hotel_id --}}
+                    <input id="promoHotelId" name="hotel_id" type="hidden" required>
+
+                    <datalist id="promoHotelsList">
+                        @foreach($promoHotels as $h)
+                            <option value="{{ $h->name }} (#{{ $h->id }})" data-id="{{ $h->id }}">
+                                {{ $h->name }} ({{ $h->city }} {{ $h->country }})
+                            </option>
+                        @endforeach
+                    </datalist>
+
+                    <div class="kpi-sub mt-1">Pick a hotel; the ID will be extracted automatically.</div>
                 </div>
                 <div class="col-md-4">
                     <div class="form-check mt-4">
@@ -267,6 +290,34 @@
                     <button class="btn btn-sm btn-primary" type="submit">Recompute Offer</button>
                 </div>
             </form>
+
+            <script>
+                (function () {
+                    const input = document.getElementById('promoHotelSearch');
+                    const hidden = document.getElementById('promoHotelId');
+                    const form = document.getElementById('promoRecomputeForm');
+
+                    function extractId(value) {
+                        // Expected format: "Hotel Name (#123)"
+                        const m = String(value || '').match(/\(#(\d+)\)\s*$/);
+                        return m ? parseInt(m[1], 10) : null;
+                    }
+
+                    input?.addEventListener('input', function () {
+                        const id = extractId(input.value);
+                        hidden.value = id ? String(id) : '';
+                    });
+
+                    form?.addEventListener('submit', function (e) {
+                        const id = extractId(input.value);
+                        if (!id) {
+                            e.preventDefault();
+                            alert('Please select a hotel from the list so we can detect the ID.');
+                        }
+                        hidden.value = id ? String(id) : '';
+                    });
+                })();
+            </script>
         </div>
     </div>
 </div>    

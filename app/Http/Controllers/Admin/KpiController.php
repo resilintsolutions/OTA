@@ -8,6 +8,7 @@ use App\Models\SearchLog;
 use App\Models\PromoEngineSetting;
 use App\Models\PromoEvent;
 use App\Models\PromoOffer;
+use App\Models\Hotel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -214,6 +215,12 @@ class KpiController extends Controller
             ? round(($promoClicks / $promoImpressions) * 100, 2)
             : 0.0;
 
+        $promoHotels = Hotel::query()
+            ->select(['id', 'name', 'city', 'country'])
+            ->orderBy('name')
+            ->limit(200)
+            ->get();
+
         return view('admin.dashboard.kpis', [
             'period'             => $period,
             'from'               => $from,
@@ -240,6 +247,7 @@ class KpiController extends Controller
             'promoImpressions'    => $promoImpressions,
             'promoClicks'         => $promoClicks,
             'promoCtr'            => $promoCtr,
+            'promoHotels'         => $promoHotels,
         ]);
     }
 }
