@@ -52,7 +52,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('dashboard');
 });
 
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin,web'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', function () {
         return redirect()->route('admin.kpis');
     })->name('dashboard');
