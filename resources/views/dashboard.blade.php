@@ -9,6 +9,14 @@
                 <div class="p-6 space-y-6">
                     <p>Welcome, {{ auth()->user()->name }}!</p>
 
+                    @role('admin')
+                        <x-panel title="Admin">
+                            <ul class="list-disc pl-5">
+                                <li><a href="{{ route('admin.promo.index') }}">Promo</a></li>
+                            </ul>
+                        </x-panel>
+                    @endrole
+
                     {{-- @role('admin')
                     <x-panel title="Admin Tools">
                         <ul class="list-disc pl-5">

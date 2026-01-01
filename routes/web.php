@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\TodayPerformanceController;
 use App\Http\Controllers\Admin\AdminReservationController;
 use App\Http\Controllers\Admin\HotelExclusionController;
 use App\Http\Controllers\Admin\SystemHealthController;
+use App\Http\Controllers\Admin\PromoDashboardController;
 
 Route::get('/', function () {
     // return view('welcome');
@@ -52,6 +53,10 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function () {
+        return redirect()->route('admin.kpis');
+    })->name('dashboard');
+
     Route::resource('users', AdminUserController::class);
     Route::resource('roles', AdminRoleController::class);
     Route::resource('permissions', AdminPermissionController::class)->only(['index', 'create', 'store', 'destroy']);
@@ -163,6 +168,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/api-health/realtime', [SystemHealthController::class, 'realtime'])
         ->name('api-health.realtime');
 
+    });
+
+    // Promo (dashboard navigation)
+    Route::prefix('promo')->name('promo.')->group(function () {
+        Route::get('/', [PromoDashboardController::class, 'index'])->name('index');
+        Route::get('/offers/{offer}', [PromoDashboardController::class, 'show'])->name('offers.show');
     });
 });
 

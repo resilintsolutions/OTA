@@ -19,6 +19,8 @@
 
     <hr/>
     <a href="{{ url('/admin/hotels') }}">Manage Hotels</a>
+  &nbsp;|&nbsp;
+  <a href="{{ route('admin.promo.index') }}">Promo</a>
   </div>
 </body>
 </html>

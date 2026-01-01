@@ -123,5 +123,8 @@ class DemoDataSeeder extends Seeder
 
         // Promo Engine defaults (idempotent)
         $this->call(PromoEngineSeeder::class);
+
+    // Mock promo offers + events for admin dashboards
+    $this->call(PromoOffersSeeder::class);
     }
 }
